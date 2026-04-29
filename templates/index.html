@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+  <h1>Dashboard Overview</h1>
+  <p>Welcome back! Here's what's happening at your university today.</p>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card glass-effect card-hover">
+    <div class="stat-icon students">
+      <i class="fas fa-user-graduate"></i>
+    </div>
+    <div class="stat-info">
+      <h3>Total Students</h3>
+      <p class="stat-number">{{ student_count }}</p>
+    </div>
+  </div>
+
+  <div class="stat-card glass-effect card-hover">
+    <div class="stat-icon faculty">
+      <i class="fas fa-chalkboard-teacher"></i>
+    </div>
+    <div class="stat-info">
+      <h3>Active Faculty</h3>
+      <p class="stat-number">{{ faculty_count }}</p>
+    </div>
+  </div>
+
+  <div class="stat-card glass-effect card-hover">
+    <div class="stat-icon courses">
+      <i class="fas fa-book"></i>
+    </div>
+    <div class="stat-info">
+      <h3>Total Courses</h3>
+      <p class="stat-number">{{ course_count }}</p>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-widgets">
+  <div class="widget glass-effect">
+    <h3>Recent Activity</h3>
+    <ul class="activity-list">
+      <li><i class="fas fa-plus-circle text-success"></i> New student 'John Doe' enrolled in Computer Science.</li>
+      <li><i class="fas fa-check-circle text-primary"></i> Dr. Alan Turing updated the syllabus for CS101.</li>
+      <li><i class="fas fa-calendar-alt text-warning"></i> Fall semester schedules have been published.</li>
+    </ul>
+  </div>
+  <div class="widget glass-effect">
+    <h3>System Status</h3>
+    <div class="status-item">
+      <span>Database Integration</span>
+      <span class="badge success">Healthy</span>
+    </div>
+    <div class="status-item">
+      <span>Authentication Service</span>
+      <span class="badge success">Online</span>
+    </div>
+    <div class="status-item">
+      <span>Email Notifications</span>
+      <span class="badge warning">Delayed</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart - NexusTech</title>
+    <meta name="description" content="View your cart items securely">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="/" class="logo">
+        <i class="fa-solid fa-atom"></i>
+        NexusTech
+    </a>
+    <div class="nav-controls">
+        <a href="/wishlist" class="nav-icon-link" style="color: white; text-decoration: none; margin-right: 15px;">
+            <i class="fa-solid fa-heart"></i>
+        </a>
+        {% if user %}
+            <a href="/profile" class="nav-icon-link" style="color: white; text-decoration: none; margin-right: 15px;"><i class="fa-solid fa-user"></i> Profile</a>
+        {% else %}
+            <a href="/login" class="nav-icon-link" style="color: white; text-decoration: none; margin-right: 15px;"><i class="fa-solid fa-user"></i> Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="flash-message {{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <h1 class="page-title">Shopping Cart</h1>
+
+    <div class="cart-container">
+        {% if cart|length > 0 %}
+            <div class="cart-items">
+                {% for item in cart %}
+                <div class="cart-item">
+                    <div class="item-info">
+                        <div class="item-icon" style="overflow: hidden; padding: 0; background: transparent;">
+                            <img src="{{ item.image }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
+                        </div>
+                        <div class="item-details">
+                            <h4>{{ item.name }}</h4>
+                            <p>Ref: #NXTR-{{ item.id }}</p>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <span class="item-qty">Qty: {{ item.get('quantity', 1) }}</span>
+                        <span class="item-price">₹{{ "{:,}".format(item.price * item.get('quantity', 1)) }}</span>
+                        <a href="/remove/{{ loop.index0 }}" class="remove-btn">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="cart-summary" style="flex-direction: column; align-items: flex-end;">
+                <div style="width: 100%; max-width: 400px;">
+                    <form action="/apply_promo" method="POST" style="display: flex; gap: 0.5rem; margin-bottom: 2rem;">
+                        <input type="text" name="promo_code" placeholder="Promo code (e.g. NEXUS20)" style="flex: 1; padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; outline: none;">
+                        <button type="submit" class="btn-primary" style="padding: 0.8rem 1.2rem; border-radius: 8px; background: var(--primary); color: white; border: none; cursor: pointer;">Apply</button>
+                    </form>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-muted);">
+                        <span>Subtotal</span>
+                        <span>₹{{ "{:,}".format(subtotal) }}</span>
+                    </div>
+                    {% if discount > 0 %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--danger);">
+                        <span>Discount applied</span>
+                        <span>-₹{{ "{:,}".format(discount) }}</span>
+                    </div>
+                    {% endif %}
+                    <div style="display: flex; justify-content: space-between; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem; align-items: center;">
+                        <h3 style="margin:0;">Total Amount</h3>
+                        <span style="font-size: 2.5rem; font-weight: 700; color: white;">₹{{ "{:,}".format(total) }}</span>
+                    </div>
+                    <a href="/checkout" class="checkout-btn" style="display: block; text-align: center; text-decoration: none; margin-top: 2rem; width: 100%; box-sizing: border-box;">
+                        Proceed to Secure Checkout <i class="fa-solid fa-arrow-right" style="margin-left: 0.5rem;"></i>
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-cart">
+                <i class="fa-solid fa-cart-arrow-down"></i>
+                <h2>Your cart is empty</h2>
+                <p>Looks like you haven't added any tech gear yet.</p>
+                <a href="/" class="btn-back">Browse Products</a>
+            </div>
+        {% endif %}
+    </div>
+</main>
+
+<!-- Removed legacy modal -->
+
+</body>
+</html>

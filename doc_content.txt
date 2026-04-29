@@ -1,0 +1,392 @@
+
+UNIVERSITY MANAGEMENT SYSTEM
+  Automated CI/CD Pipeline  |  Technical Documentation  
+Flask · GitHub Actions · Docker · GitHub Pages
+
+
+1.  Project Overview
+
+The University Management System (UMS) is a full-stack web application built with Python Flask, enabling university administrators, faculty, and students to manage academic operations through a unified interface. This document provides a complete technical specification for the application architecture, feature set, file structure, and automated CI/CD pipeline.
+
+1.1  Objectives
+Deliver a lightweight, containerized Flask web application for university operations.
+Enforce code quality via automated linting and testing on every push.
+Automate deployment to a live environment using GitHub Actions.
+Maintain a reproducible Docker build for consistent runtime behavior.
+Provide static asset delivery through templated HTML and CSS.
+
+1.2  Technology Stack
+
+
+
+2.  Repository File Structure
+
+The following structure reflects the repository as visible in the project workspace. Each file and directory has a specific role in both the runtime application and the CI/CD pipeline.
+
+2.1  Directory Tree
+university-management-system/
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml          ← GitHub Actions pipeline definition
+├── static/
+│   ├── css/
+│   │   └── style.css          ← Global stylesheet
+│   ├── js/                    ← Client-side scripts (if any)
+│   └── images/                ← Image assets
+├── templates/
+│   ├── base.html              ← Base Jinja2 layout (navbar, footer)
+│   ├── index.html             ← Dashboard / Home page
+│   ├── students.html          ← Student management view
+│   ├── faculty.html           ← Faculty management view
+│   └── courses.html           ← Course catalog view
+├── .dockerignore              ← Files excluded from Docker build context
+├── app.py                     ← Flask application entry point
+├── Dockerfile                 ← Container image definition
+├── LICENSE                    ← Project license
+├── README.md                  ← Project overview and setup guide
+└── requirements.txt           ← Python package dependencies
+
+2.2  File-by-File Description
+
+
+3.  Application Features & Workflows
+
+3.1  Core Modules
+3.1.1  Dashboard (index.html)
+The main landing page rendered at the / route. Provides an at-a-glance summary of university metrics: total students, active courses, and faculty count. Served by the index() view function in app.py.
+
+3.1.2  Student Management
+Accessible at /students. Allows administrators to view, add, update, and remove student records. Data is passed from the Flask route to the students.html template via Jinja2 context variables.
+View paginated list of enrolled students.
+Search and filter by department, year, or enrollment status.
+Add new student records via a form (POST /students/add).
+Edit or delete existing records.
+
+3.1.3  Faculty Management
+Accessible at /faculty. Manages faculty profiles, department assignments, and subject allocations. Mirrors the CRUD pattern used in student management.
+
+3.1.4  Course Catalog
+Accessible at /courses. Lists all available courses with metadata (course code, credits, faculty, department). Supports filtering and linking courses to assigned faculty.
+
+3.2  URL Route Map
+
+3.3  Template Inheritance (Jinja2)
+All pages extend base.html using Jinja2 block inheritance. This ensures a consistent header, navigation bar, and footer across all views without code duplication.
+<!-- templates/students.html -->
+{% extends 'base.html' %}
+
+{% block title %}Students{% endblock %}
+
+{% block content %}
+  <h2>Student Management</h2>
+  {% for student in students %}
+    <div class='student-card'>{{ student.name }}</div>
+  {% endfor %}
+{% endblock %}
+
+
+
+4.  Flask Application — app.py
+
+app.py is the single application entry point. It initializes the Flask app, registers all URL routes, and runs the development server. For production, gunicorn is used as the WSGI server (defined in the Dockerfile CMD).
+
+4.1  Application Initialization
+from flask import Flask, render_template, request, redirect, url_for
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html', title='Dashboard')
+
+@app.route('/students')
+def students():
+    # Fetch student data from data store or mock list
+    students_list = []  # Replace with DB query
+    return render_template('students.html', students=students_list)
+
+if __name__ == '__main__':
+    app.run(debug=False, host='0.0.0.0', port=5000)
+
+4.2  requirements.txt
+All Python dependencies must be listed with pinned versions to guarantee reproducible builds in CI and Docker.
+Flask==3.0.3
+Werkzeug==3.0.3
+Jinja2==3.1.4
+gunicorn==22.0.0
+pytest==8.2.2
+flake8==7.1.0
+
+
+5.  Docker Containerization
+
+Docker packages the Flask application and all its dependencies into a portable, self-contained image. This ensures the application behaves identically in development, CI runners, and production.
+
+5.1  Dockerfile
+# syntax=docker/dockerfile:1
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies first (layer caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY . .
+
+# Expose Flask default port
+EXPOSE 5000
+
+# Production WSGI server
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+
+5.2  .dockerignore
+Excluding unnecessary files from the build context keeps the Docker image lean and prevents secrets from leaking into the image.
+.git
+__pycache__
+*.pyc
+*.pyo
+.env
+.env.*
+*.md
+tests/
+.github/
+venv/
+.dockerignore
+
+5.3  Docker Build & Run Commands
+
+
+6.  Automated CI/CD Pipeline — GitHub Actions
+
+The CI/CD pipeline is defined in .github/workflows/ci-cd.yml and runs automatically on every push to any branch and on pull requests targeting the main branch. It consists of three sequential stages: Lint, Test, and Deploy.
+
+6.1  Pipeline Architecture
+
+
+6.2  Workflow File — ci-cd.yml
+name: UMS CI/CD Pipeline
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+env:
+  IMAGE_NAME: ums-flask
+
+jobs:
+  # ── JOB 1: LINT ────────────────────────────────────
+  lint:
+    name: Code Quality — flake8
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install lint dependencies
+        run: pip install flake8
+
+      - name: Run flake8
+        run: flake8 . --max-line-length=120 --exclude=venv,__pycache__
+
+  # ── JOB 2: TEST ────────────────────────────────────
+  test:
+    name: Unit Tests — pytest
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest --tb=short
+
+  # ── JOB 3: BUILD DOCKER IMAGE ──────────────────────
+  build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME:${{ github.sha }} .
+
+  # ── JOB 4: DEPLOY ──────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
+
+      - name: Notify deployment
+        run: echo "Deployed $IMAGE_NAME:latest successfully."
+
+
+
+6.3  Pipeline Trigger Conditions
+
+6.4  GitHub Actions Secrets Required
+The following repository secrets must be configured under Settings → Secrets and Variables → Actions:
+
+6.5  Pipeline Flow Diagram
+
+
+
+7.  Static Assets & Templates
+
+7.1  Static Directory (/static)
+Flask serves all files under the /static directory at the URL path /static/<filename>. In templates, assets are always referenced via the url_for() helper to avoid hardcoded paths.
+<!-- In templates/base.html -->
+<link rel='stylesheet' href='{{ url_for("static", filename="css/style.css") }}'>
+<script src='{{ url_for("static", filename="js/main.js") }}'></script>
+<img src='{{ url_for("static", filename="images/logo.png") }}'>
+
+7.2  Base Template (base.html)
+base.html defines the shared HTML skeleton. All other templates extend it using Jinja2 block inheritance. This ensures consistent navigation, styling, and layout across every page.
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>{% block title %}UMS{% endblock %} | University Management</title>
+  <link rel='stylesheet' href='{{ url_for("static", filename="css/style.css") }}'>
+</head>
+<body>
+  <nav class='navbar'>
+    <a href='/'>Dashboard</a>
+    <a href='/students'>Students</a>
+    <a href='/faculty'>Faculty</a>
+    <a href='/courses'>Courses</a>
+  </nav>
+  <main class='container'>
+    {% block content %}{% endblock %}
+  </main>
+  <footer>
+    <p>&copy; 2026 University Management System</p>
+  </footer>
+</body>
+</html>
+
+
+
+8.  Local Development Setup
+
+8.1  Without Docker
+For local development without containers, follow the standard Python virtual environment workflow:
+# 1. Clone the repository
+git clone https://github.com/<org>/university-management-system.git
+cd university-management-system
+
+# 2. Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate        # Linux / macOS
+.\venv\Scripts\activate       # Windows
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run Flask development server
+python app.py
+
+# Application runs at: http://localhost:5000
+
+8.2  With Docker
+# Build the Docker image
+docker build -t ums-flask:dev .
+
+# Run the container
+docker run -p 5000:5000 ums-flask:dev
+
+# Application runs at: http://localhost:5000
+
+8.3  Running Tests Locally
+# Install pytest (already in requirements.txt)
+pip install pytest
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run linter
+flake8 . --max-line-length=120 --exclude=venv,__pycache__
+
+
+9.  Git & GitHub Workflow
+
+9.1  Branching Strategy
+
+9.2  Commit Conventions
+Use semantic commit messages for clarity and to support automated changelog generation:
+
+9.3  Pull Request Checklist
+Code passes flake8 lint without errors.
+All existing and new pytest cases pass.
+Docker image builds successfully.
+No secrets or credentials committed to source.
+README updated if public-facing behavior changed.
+Reviewer assigned and PR description filled.
+
+
+10.  Security Considerations
+
+10.1  Secret Management
+All sensitive values (passwords, API keys, tokens) must be stored as GitHub Actions Secrets and never hardcoded in source files or committed to the repository.
+
+
+10.2  Docker Security Best Practices
+Use python:3.11-slim base image to minimize attack surface.
+Do not run the container process as root; add a non-root USER in the Dockerfile.
+Exclude .env files and secrets via .dockerignore.
+Pin dependency versions in requirements.txt to prevent supply-chain attacks.
+Regularly rebuild the image to pull in OS security patches.
+
+10.3  Flask Security Settings
+Set debug=False in all non-development environments.
+Use a randomly generated SECRET_KEY environment variable for session management.
+Enable CSRF protection for all form submissions.
+Validate and sanitize all user inputs before processing.
+
+
+11.  README.md — Recommended Structure
+
+The README.md serves as the primary onboarding document for new contributors and reviewers. It should cover all information needed to clone, run, and contribute to the project.
+
+
+12.  Appendix — Quick Reference
+
+12.1  Key Commands Summary
+
+12.2  Glossary
+
+End of Technical Documentation  —  University Management System  |  v1.0.0
