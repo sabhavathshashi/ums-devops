@@ -6,10 +6,20 @@ from werkzeug.security import check_password_hash, generate_password_hash
 app = Flask(__name__)
 app.secret_key = "super_secret_key"
 
-# Admin credentials (passwords are hashed for better security)
-ADMIN_CREDENTIALS = {
-    "admin": generate_password_hash("admin123"),
-    "shashi": generate_password_hash("shashi")
+# User store with hashed passwords
+USERS = {
+    "admin": {
+        "username": "admin",
+        "password_hash": generate_password_hash("admin123"),
+        "name": "Administrator",
+        "email": "admin@university.local"
+    },
+    "shashi": {
+        "username": "shashi",
+        "password_hash": generate_password_hash("shashi"),
+        "name": "Shashi Kumar",
+        "email": "shashi@university.local"
+    }
 }
 
 # Mock databases
@@ -44,27 +54,79 @@ def login_required(f):
     return decorated_function
 
 
+def get_user(username):
+    if not username:
+        return None
+    return USERS.get(username)
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        stored_hash = ADMIN_CREDENTIALS.get(username)
-        if username and password and stored_hash and check_password_hash(stored_hash, password):
+        user = get_user(username)
+        if username and password and user and check_password_hash(user['password_hash'], password):
             session['logged_in'] = True
             session['username'] = username
             flash('Successfully logged in.', 'success')
             return redirect(url_for('index'))
-        else:
-            flash('Invalid credentials. Please try again.', 'danger')
-    return render_template('login.html')
+        flash('Invalid credentials. Please try again.', 'danger')
+    return render_template('auth.html', mode='login')
+
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        name = request.form.get('name')
+        email = request.form.get('email')
+
+        if not username or not password or not name or not email:
+            flash('All fields are required for registration.', 'danger')
+            return render_template('auth.html', mode='register')
+
+        if username in USERS:
+            flash('Username is already taken. Please choose another.', 'warning')
+            return render_template('auth.html', mode='register')
+
+        USERS[username] = {
+            'username': username,
+            'password_hash': generate_password_hash(password),
+            'name': name,
+            'email': email
+        }
+        session['logged_in'] = True
+        session['username'] = username
+        flash('Registration successful. You are now logged in.', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('auth.html', mode='register')
 
 
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('username', None)
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    user = get_user(session.get('username'))
+    if not user:
+        flash('User profile not found.', 'danger')
+        return redirect(url_for('login'))
+
+    orders = [
+        {"order_id": "ORD-1024", "status": "Delivered", "total": 2875, "items": ["Notebook", "Backpack"]},
+        {"order_id": "ORD-1101", "status": "Processing", "total": 1599, "items": ["Course Material", "Lab Kit"]}
+    ]
+
+    return render_template('profile.html', user=user, orders=orders)
 
 
 @app.route('/')
