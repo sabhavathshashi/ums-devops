@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang='en'>
+
 <head>
   <meta charset='UTF-8'>
   <meta name='viewport' content='width=device-width, initial-scale=1.0'>
@@ -15,6 +16,7 @@
       min-height: 100vh;
       width: 100%;
     }
+
     .login-card {
       width: 100%;
       max-width: 400px;
@@ -22,22 +24,27 @@
       border-radius: 20px;
       text-align: center;
     }
+
     .login-logo {
       font-size: 48px;
       color: var(--accent-primary);
       margin-bottom: 16px;
     }
+
     .login-card h2 {
       margin-bottom: 8px;
     }
+
     .login-card p {
       color: var(--text-secondary);
       margin-bottom: 32px;
       font-size: 14px;
     }
+
     .login-form .form-group {
       text-align: left;
     }
+
     .login-btn {
       width: 100%;
       justify-content: center;
@@ -47,23 +54,24 @@
     }
   </style>
 </head>
+
 <body>
   <div class="login-container">
     <div class="login-card glass-effect">
       <i class="fas fa-university login-logo"></i>
       <h2>Welcome Back</h2>
       <p>Sign in to the University Management System</p>
-      
+
       {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-          <div class="flash-messages" style="margin-bottom: 20px;">
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}" style="text-align: left; padding: 12px; margin-bottom: 8px;">
-                {{ message }}
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
+      {% if messages %}
+      <div class="flash-messages" style="margin-bottom: 20px;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}" style="text-align: left; padding: 12px; margin-bottom: 8px;">
+          {{ message }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
       {% endwith %}
 
       <form class="login-form" method="POST" action="{{ url_for('login') }}">
@@ -80,4 +88,5 @@
     </div>
   </div>
 </body>
+
 </html>

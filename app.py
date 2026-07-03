@@ -7,7 +7,8 @@ app.secret_key = "super_secret_key"
 
 # Admin credentials
 ADMIN_CREDENTIALS = {
-    "admin": "admin123"
+    "admin": "admin123",
+    "shashi":"shashi"
 }
 
 # Mock databases
