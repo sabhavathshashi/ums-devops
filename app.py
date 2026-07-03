@@ -1,14 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from functools import wraps
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"
 
-# Admin credentials
+# Admin credentials (passwords are hashed for better security)
 ADMIN_CREDENTIALS = {
-    "admin": "admin123",
-    "shashi":"shashi"
+    "admin": generate_password_hash("admin123"),
+    "shashi": generate_password_hash("shashi")
 }
 
 # Mock databases
@@ -48,8 +49,10 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        if ADMIN_CREDENTIALS.get(username) == password:
+        stored_hash = ADMIN_CREDENTIALS.get(username)
+        if username and password and stored_hash and check_password_hash(stored_hash, password):
             session['logged_in'] = True
+            session['username'] = username
             flash('Successfully logged in.', 'success')
             return redirect(url_for('index'))
         else:
